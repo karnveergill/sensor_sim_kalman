@@ -1,10 +1,11 @@
 # Use an official ROS 2 base image (change "humble" to your desired ROS 2 distro)
 FROM osrf/ros:humble-desktop
 
-# Install necessary packages for GUI forwarding
+# Install necessary packages for GUI forwarding & ros2 colcon building
 RUN apt-get update && apt-get install -y \
     x11-apps \
     mesa-utils \
+    python3-colcon-common-extensions \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up display forwarding for macOS (XQuartz)
