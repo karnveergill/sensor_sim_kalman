@@ -17,10 +17,10 @@ class SensorSimulator : public rclcpp::Node
     // Constructor
     SensorSimulator() : Node("sensor_simulator"),
                         gen(rd()),
-                        noise(0,0, 1.0)
+                        noise(0.0, 1.0)
     {
       // Initialize publisher with topic name sensor_data and msg buffer 10
-      publisher_ = this->create_pubisher<sensor_msgs::msg::PointCloud2>("sensor_data",
+      publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("sensor_data",
                                                                         10);
       
       // Initialize timer callback with publish_data function
@@ -65,7 +65,7 @@ class SensorSimulator : public rclcpp::Node
       auto msg = sensor_msgs::msg::PointCloud2();
       msg.header.stamp = this->get_clock()->now();
       msg.width = 1;
-      msg.heigh = 1;
+      msg.height = 1;
 
       // Simulate noisy data & publish
       msg.data = {static_cast<uint8_t>(noise(gen) * 100)};
