@@ -9,7 +9,13 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(visualization_msgs REQUIRED)
+
+add_executable(noisy_sensor src/sensor_simulator.cpp)
+ament_target_dependencies(noisy_sensor rclcpp sensor_msgs)
+
+install(TARGETS 
+        noisy_sensor
+        DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

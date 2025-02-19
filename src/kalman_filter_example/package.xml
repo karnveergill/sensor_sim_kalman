@@ -3,7 +3,7 @@
 <package format="3">
   <name>kalman_filter_example</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Simple noisy sensor data publisher</description>
   <maintainer email="karnveerg94@gmail.com">root</maintainer>
   <license>TODO: License declaration</license>
 
