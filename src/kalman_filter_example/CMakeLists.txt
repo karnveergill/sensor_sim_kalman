@@ -9,12 +9,20 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+# Include eigen headers
+include_directories(${EIGEN3_INCLUDE_DIR})
 
 add_executable(noisy_sensor src/sensor_simulator.cpp)
+add_executable(kalman_2d src/kalman_filter_2d.cpp)
 ament_target_dependencies(noisy_sensor rclcpp sensor_msgs)
+ament_target_dependencies(kalman_2d rclcpp sensor_msgs geometry_msgs Eigen3)
 
 install(TARGETS 
         noisy_sensor
+        kalman_2d
         DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
