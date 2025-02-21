@@ -17,7 +17,7 @@ class KalmanFilter2DNode : public rclcpp::Node
 {
 public:
   // Constructor
-  KalmanFilter2DNode() : Node("2d_kalman_filter"),
+  KalmanFilter2DNode() : Node("kalman_filter_2d"),
                          last_imu_t_(0)
   {
     // Create subscriptions to GPS and IMU data
