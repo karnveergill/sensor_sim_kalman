@@ -9,29 +9,30 @@
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 
-using namespace Eigen;
+using Eigen::Vector2d;
+using Eigen::Matrix2d;
 using namespace std::chrono_literals;
 
-class 2DKalmanFilterNode : public rclcpp::Node
+class KalmanFilter2DNode : public rclcpp::Node
 {
 public:
   // Constructor
-  2DKalmanFilterNode() : Node("2d_kalman_filter"),
+  KalmanFilter2DNode() : Node("2d_kalman_filter"),
                          last_imu_t_(0)
   {
     // Create subscriptions to GPS and IMU data
     gps_sub_ = this->create_subscription
                         <sensor_msgs::msg::NavSatFix>("gps/data", 
                                                       10, 
-                                                      std::bind(&KalmanFilterNode::gps_callback, 
-                                                      this, 
-                                                      std::placeholders::_1));
+                                                      std::bind(&KalmanFilter2DNode::gps_callback,
+                                                                this,
+                                                                std::placeholders::_1));
     imu_sub_ = this->create_subscription
-                        <sensor_msgs::msg::NavSatFix>("imu_data",
-                                                      10,
-                                                      std::bind(&KalmanFilterNode::imu_callback,
-                                                      this,
-                                                      std::placeholders::_1));
+                        <sensor_msgs::msg::Imu>("imu_data",
+                                                10,
+                                                std::bind(&KalmanFilter2DNode::imu_callback,
+                                                          this,
+                                                          std::placeholders::_1));
 
     // Create publisher for filtered position data
     pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("filterd_pose",
@@ -40,8 +41,8 @@ public:
     // Initialize kalman filter values
     estimates_ = Vector2d(0, 0); // Don't know our initial position, guess 0,0
     estimates_covariance_ = Matrix2d::Identity() * 1; // Modestly trust our intial estimate
-    system_covariance_ = Matrix2D::Identity() * 0.01; // Modestly trust our model
-    sensor_covariance_ = Matrix2D::Identity() * 0.1;  // Modestly trust our sensor
+    system_covariance_ = Matrix2d::Identity() * 0.01; // Modestly trust our model
+    sensor_covariance_ = Matrix2d::Identity() * 0.1;  // Modestly trust our sensor
   }
 
 private:
@@ -70,7 +71,7 @@ private:
 
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
   {
-    rclcpp__Time curr_t = msg->header.stamp;
+    rclcpp::Time curr_t = msg->header.stamp;
 
     // If first entry, save time and leave
     if(last_imu_t_.nanoseconds() == 0)
@@ -87,7 +88,7 @@ private:
 
     // simple integration for position estimate
     estimates_ += dt * dt * Vector2d(msg->linear_acceleration.x,
-                                     msg->linear_acceleartion.y);
+                                     msg->linear_acceleration.y);
   }
 
   void kalman_update(const Vector2d &measurment)
@@ -107,7 +108,15 @@ private:
     geometry_msgs::msg::PoseStamped pose_msg;
     pose_msg.header.stamp = this->get_clock()->now();
     pose_msg.pose.position.x = estimates_[0];
-    pose_msg.pose_position.y = estimates_[1];
+    pose_msg.pose.position.y = estimates_[1];
     pose_pub_->publish(pose_msg);
   }
+};
+
+int main(int argc, char **argv)
+{
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<KalmanFilter2DNode>());
+  rclcpp::shutdown();
+  return 0;
 }
