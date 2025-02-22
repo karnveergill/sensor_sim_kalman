@@ -16,12 +16,12 @@ public:
   {
     gps_pub_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("gps_pub", 10);
     imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>("imu_pub", 10);
-    timer_ = this_create_wall_timer(std::chrono::milliseconds(100),
-                                    std::bing(&SimulateGpsImu::publish_data, this));
+    timer_ = this->create_wall_timer(std::chrono::milliseconds(100),
+                                     std::bind(&SimulateGpsImu::publish_data, this));
 
     // Seed random number generator 
     std::random_device rd;
-    gen_ = std::mt19937(rd);
+    gen_ = std::mt19937(rd());
     imu_noise_ = std::normal_distribution(0.0, 0.01); // Noise with stddev 0.01 for imu
     gps_noise_ = std::normal_distribution(0.0, 0.0001); // 0.0001 stddev noise for gps
   }
