@@ -17,12 +17,15 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 
 add_executable(noisy_sensor src/sensor_simulator.cpp)
 add_executable(kalman_2d src/kalman_filter_2d.cpp)
+add_executable(sim_gps_imu src/gps_imu_simulator.cpp)
 ament_target_dependencies(noisy_sensor rclcpp sensor_msgs)
 ament_target_dependencies(kalman_2d rclcpp sensor_msgs geometry_msgs Eigen3)
+ament_target_dependencies(sim_gps_imu rclcpp sensor_msgs)
 
 install(TARGETS 
         noisy_sensor
         kalman_2d
+        sim_gps_imu
         DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
