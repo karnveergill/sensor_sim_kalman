@@ -58,7 +58,7 @@ class SensorSimulator : public rclcpp::Node
      */
     std::normal_distribution<> noise;
 
-    // Implementation
+    // Implementations
     void publish_data()
     {
       // Create 2D point cloud message
