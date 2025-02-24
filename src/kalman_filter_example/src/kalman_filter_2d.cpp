@@ -20,22 +20,24 @@ public:
   KalmanFilter2DNode() : Node("kalman_filter_2d"),
                          last_imu_t_(0)
   {
+    RCLCPP_INFO(this->get_logger(), "CONSTRUCTING KALMAN FILTER 2D NODE");
+
     // Create subscriptions to GPS and IMU data
     gps_sub_ = this->create_subscription
-                        <sensor_msgs::msg::NavSatFix>("gps/data", 
+                        <sensor_msgs::msg::NavSatFix>("gps_pub", 
                                                       10, 
                                                       std::bind(&KalmanFilter2DNode::gps_callback,
                                                                 this,
                                                                 std::placeholders::_1));
     imu_sub_ = this->create_subscription
-                        <sensor_msgs::msg::Imu>("imu_data",
+                        <sensor_msgs::msg::Imu>("imu_pub",
                                                 10,
                                                 std::bind(&KalmanFilter2DNode::imu_callback,
                                                           this,
                                                           std::placeholders::_1));
 
     // Create publisher for filtered position data
-    pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("filterd_pose",
+    pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("filtered_pose",
                                                                         10);
 
     // Initialize kalman filter values
@@ -43,6 +45,8 @@ public:
     estimates_covariance_ = Matrix2d::Identity() * 1; // Modestly trust our intial estimate
     system_covariance_ = Matrix2d::Identity() * 0.01; // Modestly trust our model
     sensor_covariance_ = Matrix2d::Identity() * 0.1;  // Modestly trust our sensor
+
+    RCLCPP_INFO(this->get_logger(), "KALMAN FILTER 2D NODE CONSTRUCTED");
   }
 
 private:
@@ -65,12 +69,22 @@ private:
   // Implementations
   void gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg)
   {
+    // RCLCPP_INFO(this->get_logger(), 
+    //             "GPS Callback hit! Received: LAT=%f  LON=%f", 
+    //             msg->latitude,
+    //             msg->longitude);
+
     Vector2d pose_update(msg->latitude, msg->longitude);
     kalman_update(pose_update);
   }
 
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
   {
+    // RCLCPP_INFO(this->get_logger(), 
+    //             "IMU Callback hit! Received Lin-Accel-X=%f  Lin-Accel-Y=%f",
+    //             msg->linear_acceleration.x,
+    //             msg->linear_acceleration.y);
+
     rclcpp::Time curr_t = msg->header.stamp;
 
     // If first entry, save time and leave
