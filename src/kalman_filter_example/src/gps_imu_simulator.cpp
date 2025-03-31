@@ -42,8 +42,8 @@ private:
   void publish_data()
   {
     // Contants
-    static const double LAT = 37.97154;
-    static const double LON = -114.29408;
+    static const double LAT = 32.7640826819392; //37.97154;
+    static const double LON = -117.22248798518055; //-114.29408;
     static const double ALT = 30.0;
     static const double G = -9.81;
 
