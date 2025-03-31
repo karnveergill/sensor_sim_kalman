@@ -3,10 +3,8 @@ import threading
 import rclpy
 from rclpy.node import Node
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsLineItem
-# QGraphicsRectItem, QApplication, QMainWindow
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPixmap, QPen, QColor, QBrush
-# QPainter, 
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import NavSatFix
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
@@ -65,9 +63,17 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
         self.map_item = QGraphicsPixmapItem(pixmap)
         self.scene.addItem(self.map_item)
 
+        # Zoom factor for scrolling in and out
+        self.zoom_factor = 1.0
+
         # Create GPS marker (red) & Kalman Filter marker (blue)
         self.gps_marker = self.create_and_add_marker(QColor(255, 0, 0, 150))    
         self.filter_marker = self.create_and_add_marker(QColor(0, 0, 255, 150))
+
+        # Add center marker
+        center_marker = self.create_and_add_marker(QColor(0, 0, 0, 150))
+        x, y = self.latlon_to_pixels(CENTER_LAT, CENTER_LON)
+        center_marker.setPos(x, y)
 
         # Draw grid lines on map
         self.draw_grid_lines()
@@ -81,9 +87,6 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
         utm_proj = Proj(proj="utm", zone=11, ellps="WGS84", datum="WGS84")
         self.transformer = Transformer.from_proj(Proj(proj="latlong", datum="WGS84"), 
                                                  utm_proj)
-
-        # Zoom factor for scrolling in and out
-        self.zoom_factor = 1.0
     
     ###########################################################################
     # Create ellipse marker of specified color and add to QT scene
@@ -153,7 +156,7 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
     # GPS Data Callback
     def gps_callback(self, msg):
         #print("Receieved GPS Pose Data")
-        print(f"lat:{msg.latitude}, lon:{msg.longitude}")
+        #print(f"lat:{msg.latitude}, lon:{msg.longitude}")
         try:
             x, y = self.latlon_to_pixels(msg.latitude, msg.longitude)
             self.gps_pos = [x, y]
@@ -168,7 +171,7 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
         self.filtered_pos = [x, y] 
 
     ###########################################################################
-    # Function to update QT scene with visuals 
+    # Function to update QT scene visuals 
     def update_scene(self):
         self.gps_marker.setPos(self.gps_pos[0], self.gps_pos[1])
         self.filter_marker.setPos(self.filtered_pos[0], self.filtered_pos[1])
@@ -177,14 +180,18 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
     # Scroll wheel event to capture zoom in/out commands
     def wheelEvent(self, event):
         zoom_in = event.angleDelta().y() > 0 # Scoll up to zoom in
+        angle_y = event.angleDelta().y()
+        angle_x = event.angleDelta().x()
+        print(f"angle Y: {angle_y}  angle x: {angle_x}")
 
         # Adjust zoom factor
         if zoom_in:
-            self.zoom_factor *= 1.1 # Zoom in (increase size by 10%)
+            self.zoom_factor = 1.1 # Zoom in (increase size by 10%)
         else:
-            self.zoom_factor /= 1.1 # Zoom out (decrease size by 10%)
+            self.zoom_factor = 0.9 # Zoom out (decrease size by 10%)
 
         self.scale(self.zoom_factor, self.zoom_factor)
+        print(f"zoom factor: {self.zoom_factor}")
     
 
     ###########################################################################
