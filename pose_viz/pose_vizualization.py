@@ -180,9 +180,6 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
     # Scroll wheel event to capture zoom in/out commands
     def wheelEvent(self, event):
         zoom_in = event.angleDelta().y() > 0 # Scoll up to zoom in
-        angle_y = event.angleDelta().y()
-        angle_x = event.angleDelta().x()
-        print(f"angle Y: {angle_y}  angle x: {angle_x}")
 
         # Adjust zoom factor
         if zoom_in:
@@ -191,7 +188,6 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
             self.zoom_factor = 0.9 # Zoom out (decrease size by 10%)
 
         self.scale(self.zoom_factor, self.zoom_factor)
-        print(f"zoom factor: {self.zoom_factor}")
     
 
     ###########################################################################
