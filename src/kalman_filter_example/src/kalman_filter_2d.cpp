@@ -41,10 +41,10 @@ public:
                                                                         10);
 
     // Initialize kalman filter values
-    estimates_ = Vector2d(0, 0); // Don't know our initial position, guess 0,0
-    estimates_covariance_ = Matrix2d::Identity() * 1; // Modestly trust our intial estimate
-    system_covariance_ = Matrix2d::Identity() * 0.01; // Modestly trust our model
-    sensor_covariance_ = Matrix2d::Identity() * 0.1;  // Modestly trust our sensor
+    estimates_ = Vector2d(0, 0); // Set 0,0 we will initialize this with first GPS hit
+    estimates_covariance_ = Matrix2d::Identity() * 1;  // Modestly trust our intial estimate
+    system_covariance_ = Matrix2d::Identity() * 0.001; // Highly trust our model
+    sensor_covariance_ = Matrix2d::Identity() * 0.1;   // Modestly trust our sensor
 
     RCLCPP_INFO(this->get_logger(), "KALMAN FILTER 2D NODE CONSTRUCTED");
   }
@@ -66,6 +66,9 @@ private:
   // Track last time imu received 
   rclcpp::Time last_imu_t_;
 
+  // Flag to initialize position filter with first GPS hit
+  bool first_gps_hit_{true};
+
   // Implementations
   void gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg)
   {
@@ -75,7 +78,16 @@ private:
     //             msg->longitude);
 
     Vector2d pose_update(msg->latitude, msg->longitude);
-    kalman_update(pose_update);
+    if(first_gps_hit_)
+    {
+      // Initialize position filter with first GPS position
+      estimates_ = pose_update;
+      first_gps_hit_ = false;
+    }
+    else
+    {
+      kalman_update(pose_update);
+    }
   }
 
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
