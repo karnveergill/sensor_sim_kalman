@@ -22,13 +22,10 @@ GRID_SPACING_KM = 0.01  # Distance between grid lines in km (10m)
 CENTER_LAT = 32.7640826819392   # Center latitude of image
 CENTER_LON = -117.22248798518055 # Center longitude of image
 METERS_PER_PIXEL =  (MAP_SIZE_KM * 1000) / MAP_WIDTH_PX # ~24.76 meters per pixel
-
 ROS2_QOS_CPP_PROFILE = QoSProfile(reliability=QoSReliabilityPolicy.RELIABLE,  
                                   history=QoSHistoryPolicy.KEEP_LAST,
                                   depth=10)
-EASTING_OFFSET = 737686.00
-NORTHING_OFFSET = 4206112.06
-
+# TODO: Fix UTM, not a problem but should figure out
 USE_UTM = False # Toggle between UTM or Flat Approximation
 
 ###############################################################################
@@ -55,9 +52,9 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
         self.gps_pos = [0, 0]  
         self.filtered_pos = [0, 0] 
         
-        # PyQt GUI setup
+        # PyQt GUI title, window position & size
         self.setWindowTitle("Kalman Filter GPS Visualizer")
-        self.setGeometry(100, 100, MAP_WIDTH_PX, MAP_HEIGHT_PX) # Window position & size
+        self.setGeometry(100, 100, MAP_WIDTH_PX, MAP_HEIGHT_PX)
 
         # Setup graphics scene
         self.scene = QGraphicsScene()
@@ -68,27 +65,12 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
         self.map_item = QGraphicsPixmapItem(pixmap)
         self.scene.addItem(self.map_item)
 
-        # self.view = QGraphicsView(self.scene)
-        # self.view.setRenderHint(QPainter.Antialiasing)
-        # self.view.setFixedSize(500, 500)
-        # self.setCentralWidget(self.view) # Set as central widget
-
         # Create GPS marker (red) & Kalman Filter marker (blue)
-        self.gps_marker = self.create_and_add_marker(QColor(255, 0, 0, 150))    # Red
-        self.filter_marker = self.create_and_add_marker(QColor(0, 0, 255, 150)) # Blue
+        self.gps_marker = self.create_and_add_marker(QColor(255, 0, 0, 150))    
+        self.filter_marker = self.create_and_add_marker(QColor(0, 0, 255, 150))
 
+        # Draw grid lines on map
         self.draw_grid_lines()
-        
-        # Create two rectangles for GPS and filtered data
-        # self.gps_box = QGraphicsRectItem(-5, -5, 10, 10)
-        # self.gps_box.setBrush(QBrush(QColor(255, 0, 0, 150)))
-        
-        # self.filtered_box = QGraphicsRectItem(-5, -5, 10, 10)
-        # self.filtered_box.setBrush(QBrush(QColor(0, 0, 255, 150)))
-        
-        # # Add created items to QT scene
-        # self.scene.addItem(self.gps_box)
-        # self.scene.addItem(self.filtered_box)
         
         # Setup QTimer to call update_scene() and update GUI at 20Hz
         self.timer = QTimer(self)
@@ -97,16 +79,22 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
 
         # Initialize UTM projections for lat/lon covertions
         utm_proj = Proj(proj="utm", zone=11, ellps="WGS84", datum="WGS84")
-        self.transformer = Transformer.from_proj(Proj(proj="latlong", datum="WGS84"), utm_proj)
+        self.transformer = Transformer.from_proj(Proj(proj="latlong", datum="WGS84"), 
+                                                 utm_proj)
 
+        # Zoom factor for scrolling in and out
         self.zoom_factor = 1.0
     
+    ###########################################################################
+    # Create ellipse marker of specified color and add to QT scene
     def create_and_add_marker(self, color):
         marker = QGraphicsEllipseItem(-5, -5, 10, 10) # 10x10 px circle
         marker.setBrush(QBrush(color))
         self.scene.addItem(marker)
         return marker
     
+    ###########################################################################
+    # Draw grid lines on QT scene
     def draw_grid_lines(self):
         pen = QPen(QColor(200, 200, 200, 100)) # Light gray, semi-transparent
         pen.setWidth(1)
@@ -131,6 +119,8 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
             line.setPen(pen)
             self.scene.addItem(line)
     
+    ###########################################################################
+    # Convert Lat / Lon coordinates into pixel coordinates
     def latlon_to_pixels(self, lat, lon):
         # Check for invalid lat / lon
         if lat is None or lon is None or not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
@@ -162,25 +152,20 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
     ###########################################################################
     # GPS Data Callback
     def gps_callback(self, msg):
-        print("Receieved GPS Pose Data")
-        #x, y = self.utm_proj(msg.longitude, msg.latitude)
+        #print("Receieved GPS Pose Data")
         print(f"lat:{msg.latitude}, lon:{msg.longitude}")
         try:
             x, y = self.latlon_to_pixels(msg.latitude, msg.longitude)
-            self.gps_pos = [x, y]  #[x - EASTING_OFFSET, y - NORTHING_OFFSET]
+            self.gps_pos = [x, y]
         except Exception as e:
             print(f"Error converting latlon to pixel: {e}")
-        
-        #self.gps_marker.setPos(x, y)
 
     ###########################################################################
     # Kalman Filter Data Callback 
     def filtered_callback(self, msg):
-        # print("Received Kalman Filter Pose Data")
-        #x, y = self.utm_proj(msg.pose.position.y, msg.pose.position.x)
+        #print("Received Kalman Filter Pose Data")
         x, y = self.latlon_to_pixels(msg.pose.position.x, msg.pose.position.y)
-        self.filtered_pos = [x, y]  #[x - EASTING_OFFSET, y - NORTHING_OFFSET]
-        #self.filter_marker.setPos(x, y)
+        self.filtered_pos = [x, y] 
 
     ###########################################################################
     # Function to update QT scene with visuals 
@@ -188,13 +173,8 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
         self.gps_marker.setPos(self.gps_pos[0], self.gps_pos[1])
         self.filter_marker.setPos(self.filtered_pos[0], self.filtered_pos[1])
 
-        # print(f"GPS X: {self.gps_pos[0]}, GPS Y: {self.gps_pos[1]}")
-        # print(f"Filtered X: {self.filtered_pos[0]}, Filtered Y: {self.filtered_pos[1]}")
-        # self.gps_box.setPos(self.gps_pos[0], self.gps_pos[1])
-        # self.filtered_box.setPos(self.filtered_pos[0], self.filtered_pos[1])
-        # self.view.show()
-        # print("Display Updated")
-
+    ###########################################################################
+    # Scroll wheel event to capture zoom in/out commands
     def wheelEvent(self, event):
         zoom_in = event.angleDelta().y() > 0 # Scoll up to zoom in
 
@@ -238,4 +218,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
