@@ -14,13 +14,13 @@ from math import radians, cos
 from pyproj import Proj, Transformer
 
 # Constants
-IMAGE_FILE = "map_715x716px_11x11mi.png"
-MAP_WIDTH_PX = 715      # Image width in pixels
-MAP_HEIGHT_PX = 716     # Image height in pixels
-MAP_SIZE_KM = 17.7028   # Real-world size (11 miles = ~17.7 km)
-GRID_SPACING_KM = 5     # Distance between grid lines in km
-CENTER_LAT = 37.97154   # Center latitude of image
-CENTER_LON = -114.29408 # Center longitude of image
+IMAGE_FILE = "map_744x745_600x600ft.png"
+MAP_WIDTH_PX = 744      # Image width in pixels
+MAP_HEIGHT_PX = 745     # Image height in pixels
+MAP_SIZE_KM = 0.18288   # Real-world size (600 ft = ~0.18288 km)
+GRID_SPACING_KM = 0.01  # Distance between grid lines in km (10m)
+CENTER_LAT = 32.7640826819392   # Center latitude of image
+CENTER_LON = -117.22248798518055 # Center longitude of image
 METERS_PER_PIXEL =  (MAP_SIZE_KM * 1000) / MAP_WIDTH_PX # ~24.76 meters per pixel
 
 ROS2_QOS_CPP_PROFILE = QoSProfile(reliability=QoSReliabilityPolicy.RELIABLE,  
@@ -76,6 +76,8 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
         # Create GPS marker (red) & Kalman Filter marker (blue)
         self.gps_marker = self.create_and_add_marker(QColor(255, 0, 0, 150))    # Red
         self.filter_marker = self.create_and_add_marker(QColor(0, 0, 255, 150)) # Blue
+
+        self.draw_grid_lines()
         
         # Create two rectangles for GPS and filtered data
         # self.gps_box = QGraphicsRectItem(-5, -5, 10, 10)
@@ -112,15 +114,19 @@ class GPSVisualizer(Node, QGraphicsView):  #QMainWindow):
         interval_pixels = GRID_SPACING_KM * 1000 / METERS_PER_PIXEL # Convert km to pixels
 
         # Draw vertical lines
-        for i in range(-int(MAP_SIZE_KM/2), int(MAP_SIZE_KM/2) + 1, GRID_SPACING_KM):
-            x = MAP_WIDTH_PX/2 + (i * 1000 / METERS_PER_PIXEL)
+        SIZE_M = float(MAP_SIZE_KM * 1000 / 2)
+        SIZE_M = int(SIZE_M)
+        SPACING_M = float(GRID_SPACING_KM * 1000)
+        SPACING_M = int(SPACING_M)
+        for i in range(-SIZE_M, SIZE_M + 1, SPACING_M):
+            x = MAP_WIDTH_PX/2 + (i / METERS_PER_PIXEL)
             line = QGraphicsLineItem(x, 0, x, MAP_HEIGHT_PX)
             line.setPen(pen)
             self.scene.addItem(line)
 
         # Draw horizontal lines
-        for i in range(-int(MAP_SIZE_KM/2), int(MAP_SIZE_KM/2) + 1, GRID_SPACING_KM):
-            y = MAP_HEIGHT_PX/2 - (I * 1000 / METERS_PER_PIXEL)
+        for i in range(-SIZE_M, SIZE_M + 1, SPACING_M):
+            y = MAP_HEIGHT_PX/2 - (i / METERS_PER_PIXEL)
             line = QGraphicsLineItem(0, y, MAP_WIDTH_PX, y)
             line.setPen(pen)
             self.scene.addItem(line)
